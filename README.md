@@ -12,7 +12,7 @@ A command line python app that downloads subtitle of any movie by consuming open
 
 `python srt-gt.py <Movie Name>`
 
-### Options
+### Optional Arguments
 
 ```sh
 $ python srt-gt.py -h
