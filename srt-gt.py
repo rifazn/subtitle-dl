@@ -9,11 +9,18 @@ parser = ArgumentParser()
 parser.add_argument('moviename')
 parser.add_argument('-j', '--json', help='Prints the output formatted as json',
                     action="store_true")
+parser.add_argument('-c', '--clipboard', help='Get the movie name from clipboard.',
+                    action="store_true")
+parser.add_argument('-i', help='Interactive mode. Classic prompt mode for selecting the subtitle',
+                    action="store_true")
+parser.add_argument('-m', '--menu', help='Use a menu program like dmenu, bemenu, etc.')
 args = parser.parse_args()
 
 headers = {
         "User-Agent": "TemporaryUserAgent",
 }
+
+# TODO: Implement the options: c, i, and m
 
 response = requests.get(
     f'https://rest.opensubtitles.org/search/query-{args.moviename}',
