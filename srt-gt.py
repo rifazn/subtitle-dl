@@ -1,19 +1,23 @@
 #!/bin/env python
 
 import requests
+import json
+from argparse import ArgumentParser
 from tabulate import tabulate
-import sys
+
+parser = ArgumentParser()
+parser.add_argument('moviename')
+parser.add_argument('-j', '--json', help='Prints the output formatted as json',
+                    action="store_true")
+args = parser.parse_args()
 
 headers = {
         "User-Agent": "TemporaryUserAgent",
 }
 
-if len(sys.argv) != 2:
-    print("Usage ./subpyner.py \"movie name\"")
-    sys.exit(1)
-
-print(sys.argv[1])
-response = requests.get(f'https://rest.opensubtitles.org/search/query-{sys.argv[1]}', headers=headers)
+response = requests.get(
+    f'https://rest.opensubtitles.org/search/query-{args.moviename}',
+    headers=headers)
 
 if response.status_code != 200:
     print("Error in Request")
@@ -24,4 +28,7 @@ data = response.json()
 dd = [[movie['MovieName'], movie['SubFileName'][:20],
        movie['SubDownloadLink'][:20],
        movie['Score']] for movie in data[:5]]
-print(tabulate(dd, headers=['Movie Name', 'Subtitle Name', 'URL', 'Rating']))
+if args.json:
+    print(json.dumps(dd))
+else:
+    print(tabulate(dd, headers=['Movie Name', 'Subtitle Name', 'URL', 'Rating']))
