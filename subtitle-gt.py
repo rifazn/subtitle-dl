@@ -5,6 +5,7 @@ import json
 from argparse import ArgumentParser
 from tabulate import tabulate
 
+# CLI arguments parser
 parser = ArgumentParser()
 parser.add_argument('moviename')
 parser.add_argument('-j', '--json', help='Prints the output formatted as json',
@@ -22,20 +23,27 @@ headers = {
 
 # TODO: Implement the options: c, i, and m
 
-response = requests.get(
-    f'https://rest.opensubtitles.org/search/query-{args.moviename}',
-    headers=headers)
+def get(movie):
+    response = requests.get(
+        f'https://rest.opensubtitles.org/search/query-{movie}',
+        headers=headers)
 
-if response.status_code != 200:
-    print("Error in Request")
-    sys.exit(2)
+    if response.status_code != 200:
+        print("Error in Request")
+        sys.exit(2)
 
-data = response.json()
+    data = response.json()
 
-dd = [[movie['MovieName'], movie['SubFileName'][:20],
-       movie['SubDownloadLink'][:20],
-       movie['Score']] for movie in data[:5]]
-if args.json:
-    print(json.dumps(dd))
-else:
-    print(tabulate(dd, headers=['Movie Name', 'Subtitle Name', 'URL', 'Rating']))
+    subs = [[movie['MovieName'], movie['SubFileName'][:20],
+        movie['SubDownloadLink'][:20],
+        movie['Score']] for movie in data[:5]]
+
+    return subs
+
+if __name__ == "__main__":
+    subs = get(args.moviename)
+
+    if args.json:
+        print(json.dumps(subs))
+    else:
+        print(tabulate(subs, headers=['Movie Name', 'Subtitle Name', 'URL', 'Rating']))
