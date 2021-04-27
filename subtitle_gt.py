@@ -4,6 +4,7 @@ import sys
 import json
 import requests
 import subprocess
+from string import Template
 from tabulate import tabulate
 from argparse import ArgumentParser
 
@@ -24,8 +25,8 @@ def get(movie):
 
     data = response.json()
 
-    subs = [[movie['MovieName'], movie['SubFileName'], movie['SubDownloadLink'],
-            movie['Score']] for movie in data[:5]]
+    subs = [[idx, movie['MovieName'], movie['SubFileName'], movie['SubDownloadLink'],
+            movie['Score']] for idx, movie in enumerate(data, start=1)]
 
     return subs
 
@@ -47,10 +48,11 @@ if __name__ == "__main__":
 
     if args.menu:
         menu = args.menu
-        menu_items = '\n'.join(map(lambda x: f'{x[1]} | Rating: {x[-1]}', subs))
-        print(menu_items)
+        menu_items = f'\n'.join([f'{sub[0]:>3} | {sub[2]:<80} | Rating {sub[-1]}' for sub in subs])
         choice = subprocess.run(menu.split(), input=menu_items, capture_output=True, text=True)
-        print(f'User Choice: {choice.stdout}')
+        print(choice.stdout)
+        idx = choice.stdout.split('|')[0]
+        print(idx, subs[int(idx)][-2])
     elif args.json:
         print(json.dumps(subs))
     else:
