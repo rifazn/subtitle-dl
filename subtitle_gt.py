@@ -1,9 +1,11 @@
 #!/bin/env python
 
-import requests
+import sys
 import json
-from argparse import ArgumentParser
+import requests
+import subprocess
 from tabulate import tabulate
+from argparse import ArgumentParser
 
 headers = {
         "User-Agent": "TemporaryUserAgent",
@@ -22,9 +24,8 @@ def get(movie):
 
     data = response.json()
 
-    subs = [[movie['MovieName'], movie['SubFileName'][:20],
-        movie['SubDownloadLink'][:20],
-        movie['Score']] for movie in data[:5]]
+    subs = [[movie['MovieName'], movie['SubFileName'], movie['SubDownloadLink'],
+            movie['Score']] for movie in data[:5]]
 
     return subs
 
@@ -44,7 +45,13 @@ if __name__ == "__main__":
 
     subs = get(args.moviename)
 
-    if args.json:
+    if args.menu:
+        menu = args.menu
+        menu_items = '\n'.join(map(lambda x: f'{x[1]} | Rating: {x[-1]}', subs))
+        print(menu_items)
+        choice = subprocess.run(menu.split(), input=menu_items, capture_output=True, text=True)
+        print(f'User Choice: {choice.stdout}')
+    elif args.json:
         print(json.dumps(subs))
     else:
         print(tabulate(subs, headers=['Movie Name', 'Subtitle Name', 'URL', 'Rating']))
