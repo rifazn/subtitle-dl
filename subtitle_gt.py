@@ -57,10 +57,23 @@ if __name__ == "__main__":
     if args.menu:
         menu = args.menu
         menu_items = f'\n'.join([f'{sub[0]:>3} | {sub[2]:<80} | Rating {sub[-1]}' for sub in subs])
+
+        # Let the user choose the sub through the given menu application
         choice = subprocess.run(menu.split(), input=menu_items, capture_output=True, text=True)
+        idx = int(choice.stdout.split('|')[0]) - 1
+
+        # Download the resource
+        url = subs[idx][-2]
+        r = requests.get(url)
+
+        if r.status_code == 200: # Download successful
+            header = r.headers
+            fname = header['Content-Disposition'].split('filename=')[1].strip('"')
+            with open('/tmp/' + fname, 'wb') as f:
+                f.write(r.content)
+
         print(choice.stdout)
-        idx = choice.stdout.split('|')[0]
-        print(idx, subs[int(idx)][-2])
+        print(idx, subs[idx][-2])
 
     elif args.json:
         print(json.dumps(subs))
