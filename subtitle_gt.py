@@ -2,6 +2,7 @@
 
 import sys
 import json
+import gzip
 import requests
 import subprocess
 from string import Template
@@ -12,7 +13,11 @@ headers = {
         "User-Agent": "TemporaryUserAgent",
 }
 
-# TODO: Implement the options: c, i, and m
+# TODO:
+# * Implement the options: c, i, and m
+# * Implement retries in case of failed downloads
+# * Use OS agnostic TMP dir
+# * -m and -j should not be mutually exclusive
 
 def get(movie):
     response = requests.get(
@@ -68,9 +73,24 @@ if __name__ == "__main__":
 
         if r.status_code == 200: # Download successful
             header = r.headers
-            fname = header['Content-Disposition'].split('filename=')[1].strip('"')
-            with open('/tmp/' + fname, 'wb') as f:
+
+            # Write the gzip file
+            gzipname = header['Content-Disposition'].split('filename=')[1].strip('"')
+            with open('/tmp/' + gzipname, 'wb') as f:
                 f.write(r.content)
+
+            # Extract the gzip file and read the content
+            with gzip.open(f.name, 'rb') as gzipfile:
+                file_contents = gzipfile.read()
+
+            # Write the content as regular subtitle file
+            srt_name = gzipname[:-3]
+            with open(srt_name, 'wb') as subfile:
+                subfile.write(file_contents)
+
+            print("done")
+        else:
+            print("Could not download resource. Status: ", r.status_code)
 
         print(choice.stdout)
         print(idx, subs[idx][-2])
