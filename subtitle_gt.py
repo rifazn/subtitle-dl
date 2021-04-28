@@ -34,14 +34,22 @@ if __name__ == "__main__":
     # CLI arguments parser
     parser = ArgumentParser()
 
+    # The main argument
     parser.add_argument('moviename')
-    parser.add_argument('-j', '--json', help='Prints the output formatted as json',
-                        action="store_true")
-    parser.add_argument('-c', '--clipboard', help='Get the movie name from clipboard.',
-                        action="store_true")
+
+    # The optional but essential 'options'
+    parser.add_argument('-j', '--json',
+            help='Prints the output formatted as json',
+                action="store_true")
+    parser.add_argument('-c', '--clipboard',
+            help='Get the movie name from clipboard.',
+                action="store_true")
     parser.add_argument('-i', help='Interactive mode. Classic prompt mode for selecting the subtitle',
-                        action="store_true")
-    parser.add_argument('-m', '--menu', help='Use a menu program like dmenu, bemenu, etc.')
+                action="store_true")
+    parser.add_argument('-m', '--menu',
+            help='Use a menu program like dmenu, bemenu, etc.')
+
+    # Now parse the arguments passed on the command line
     args = parser.parse_args()
 
     subs = get(args.moviename)
@@ -53,7 +61,9 @@ if __name__ == "__main__":
         print(choice.stdout)
         idx = choice.stdout.split('|')[0]
         print(idx, subs[int(idx)][-2])
+
     elif args.json:
         print(json.dumps(subs))
+
     else:
         print(tabulate(subs, headers=['Movie Name', 'Subtitle Name', 'URL', 'Rating']))
