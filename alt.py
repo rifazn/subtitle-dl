@@ -1,12 +1,12 @@
 #!/bin/env python
 
-from string import Template
+from iterfzf import iterfzf
 from tabulate import tabulate
 from argparse import ArgumentParser
 import sys, json, gzip, requests, subprocess
 
-def fzf(input):
-    print(input)
+def fzf(subs_list):
+    return iterfzf(subs_list)
 
 def print_json(subs):
     print(subs)
@@ -71,5 +71,7 @@ def _get_cli_args():
 
 if __name__ == "__main__":
     args = _get_cli_args()
-    args.menu(args.moviename)
+    # args.menu(args.moviename)
+    choice = args.menu('hi fzf'.split())
+    print(choice)
 
