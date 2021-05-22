@@ -3,7 +3,7 @@
 from iterfzf import iterfzf
 from tabulate import tabulate
 from argparse import ArgumentParser
-import sys, json, gzip, requests, subprocess
+import os, re, sys, tempfile, json, gzip, requests, subprocess
 
 def _menu(menu, subs_list):
     # TODO: Raise an exception in the try block. So the caller can deal with
@@ -26,8 +26,26 @@ def _menu(menu, subs_list):
 def print_json(subs):
     print(subs)
 
-def save(rename=True):
-    pass
+def _save(fname, file_contents, outfilename=None):
+    video_extensions = tuple(".mp4 .mkv .avi".split())
+    if fname.endswith(video_extensions):
+        fname = fname[:-3] + 'srt'
+    elif not fname.endswith('.srt'):
+        fname += fname + '.srt'
+
+    # if outfilename is a directory
+    if outfilename is not None:
+        if outfilename.endswith(os.path.sep):
+            if not os.path.isdir(outfilename):
+                print("The directory does not exist. Please create it first.")
+                sys.exit(4)
+            fname = os.path.join(outfilename, fname)
+        else:
+            fname = outfilename[:]
+
+    with open(fname, 'wb') as f:
+        f.write(file_contents)
+    print("File saved to", fname)
 
 def get_subs(moviename):
     """Get a list of subtitles for 'moviename' where each sub is a dictionary.
@@ -77,7 +95,9 @@ def _get_cli_args():
     out_group.add_argument('-p', '--print', action='store_true',
         help='Print subtitles formatted as a table. Do not parse this.')
     out_group.add_argument('-o', '--output', metavar='', dest='output',
-        help='Output to <filename_or_dir>. For ex: /dir/fname.srt, or /dir/')
+        help='Output to <filename_or_dir>. For ex: /dir/fname.srt, or /dir/.')
+    out_group.add_argument('-x', '--dont-rename', action='store_true',
+        help='Download file with original name. Do not rename to <movie_name>.')
 
     return parser.parse_args()
 
@@ -107,9 +127,9 @@ if __name__ == "__main__":
     if r.status_code == 200:
         header = r.headers
 
-        # Write the gzip file
+        # Write the downloaded gzip file
         gzipname = header['Content-Disposition'].split('filename=')[1].strip('"')
-        with open('/tmp/' + gzipname, 'wb') as f:
+        with open(os.path.join(tempfile.gettempdir(), gzipname), 'wb') as f:
             f.write(r.content)
 
         # Extract the gzip file and read the content
@@ -117,9 +137,12 @@ if __name__ == "__main__":
             file_contents = gzipfile.read()
 
         # Write the content as regular subtitle file
-        srt_name = gzipname[:-3]
-        with open(srt_name, 'wb') as subfile:
-            subfile.write(file_contents)
+        if not args.dont_rename:
+            _save(args.moviename, file_contents, outfilename=args.output)
+        else:
+            srt_name = gzipname[:-3]
+            with open(srt_name, 'wb') as subfile:
+                subfile.write(file_contents)
 
         print("done")
     else:
