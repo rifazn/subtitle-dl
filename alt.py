@@ -61,8 +61,10 @@ def get_subs(moviename):
             "User-Agent": "TemporaryUserAgent",
     }
 
+    english_only = 'sublanguageid-eng'
+
     response = requests.get(
-        f'https://rest.opensubtitles.org/search/query-{moviename}',
+        f'https://rest.opensubtitles.org/search/query-{moviename}-{english_only}',
         headers=headers)
 
     if response.status_code != 200:
