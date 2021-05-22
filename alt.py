@@ -5,11 +5,23 @@ from tabulate import tabulate
 from argparse import ArgumentParser
 import sys, json, gzip, requests, subprocess
 
-def _fzf(subs_list):
-    return iterfzf(subs_list)
+def _menu(menu, subs_list):
+    # TODO: Raise an exception in the try block. So the caller can deal with
+    # it as needed.
+    # TODO: print error log instead of stdout print
+    if menu:
+        subs_str = '\n'.join(subs_list)
+        try:
+            choice = subprocess.run(menu.split(), input=subs_str, text=True,
+                                check=True, capture_output=True).stdout
+        except subprocess.CalledProcessError as err:
+            print("Error: ", err)
+            print("Exiting.")
+            sys.exit(3)
+    else:
+        choice = iterfzf(subs_list)
 
-def _menu(subs_list):
-    return 'asd'
+    return choice
 
 def print_json(subs):
     print(subs)
@@ -55,7 +67,7 @@ def _get_cli_args():
     parser.add_argument('moviename')
 
     # The optional, but essental, 'options'
-    parser.add_argument('-m', '--menu', action='store', default=_fzf,
+    parser.add_argument('-m', '--menu', action='store',
         help='Use a menu program like dmenu, bemenu, etc.')
 
     # All the related to output
@@ -83,5 +95,34 @@ if __name__ == "__main__":
     subs_list = ['{:<3} | {:10.10} | {:<50.50} | {:<3.2}'
                  .format(*_filter(idx, sub)) for idx, sub in subs_dict_enum]
 
-    # Let user choose
-    print(args.menu(subs_list))
+    # Run the menu and let user choose
+    choice = _menu(args.menu, subs_list)
+    idx = int(choice.split(' | ')[0])
+
+    # Download the subtitle which is probaby gzipped
+    url = subs_dict_list[idx]['SubDownloadLink']
+    print(idx, url)
+    r = requests.get(url)
+
+    if r.status_code == 200:
+        header = r.headers
+
+        # Write the gzip file
+        gzipname = header['Content-Disposition'].split('filename=')[1].strip('"')
+        with open('/tmp/' + gzipname, 'wb') as f:
+            f.write(r.content)
+
+        # Extract the gzip file and read the content
+        with gzip.open(f.name, 'rb') as gzipfile:
+            file_contents = gzipfile.read()
+
+        # Write the content as regular subtitle file
+        srt_name = gzipname[:-3]
+        with open(srt_name, 'wb') as subfile:
+            subfile.write(file_contents)
+
+        print("done")
+    else:
+        print("Could not download resource. Status: ", r.status_code)
+
+
