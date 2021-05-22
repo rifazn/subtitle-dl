@@ -75,7 +75,7 @@ def get_subs(moviename):
 
     data = response.json()
 
-    keys = ['MovieName', 'SubFileName', 'SubDownloadLink', 'Score']
+    keys = ['MovieName', 'SubFileName', 'SubDownloadLink', 'SubRating']
     subs = [{key: sub[key] for key in keys} for sub in data]
 
     return subs
