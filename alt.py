@@ -52,7 +52,7 @@ def get_subs(moviename):
 
     Keys in each dict item
     ----------------------
-    'MovieName', 'SubFileName', 'SubDownloadLink', 'Score'
+    'MovieName', 'SubFileName', 'SubDownloadLink', 'SubRating'
 
     Returns:
     list(dict)
@@ -77,6 +77,7 @@ def get_subs(moviename):
 
     keys = ['MovieName', 'SubFileName', 'SubDownloadLink', 'SubRating']
     subs = [{key: sub[key] for key in keys} for sub in data]
+    subs.sort(key=lambda sub: float(sub['SubRating']), reverse=True)
 
     return subs
 
@@ -113,8 +114,8 @@ if __name__ == "__main__":
     subs_dict_enum = enumerate(subs_dict_list)
 
     # Format the dictionary items to be readable
-    _filter = lambda i, sub: [i, sub['MovieName'], sub['SubFileName'], sub['Score']]
-    subs_list = ['{:<3} | {:10.10} | {:<50.50} | {:<3.2}'
+    _filter = lambda i, sub: [i, sub['MovieName'], sub['SubFileName'], sub['SubRating']]
+    subs_list = ['{:<3} | {:10.10} | {:<50.50} | {:<3.4}'
                  .format(*_filter(idx, sub)) for idx, sub in subs_dict_enum]
 
     # Run the menu and let user choose
