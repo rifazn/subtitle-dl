@@ -90,6 +90,8 @@ def _get_cli_args():
     # The optional, but essental, 'options'
     parser.add_argument('-m', '--menu', action='store',
         help='Use a menu program like dmenu, bemenu, etc.')
+    parser.add_argument('-R', '--best-rating', action='store_true',
+        help='Download the best rated subtitle. Don\'t prompt user.')
 
     # All the related to output
     out_group = parser.add_mutually_exclusive_group()
@@ -118,9 +120,13 @@ if __name__ == "__main__":
     subs_list = ['{:<3} | {:10.10} | {:<50.50} | {:<3.4}'
                  .format(*_filter(idx, sub)) for idx, sub in subs_dict_enum]
 
+    # Subtitle selection. Download best rated subtitle, or
     # Run the menu and let user choose
-    choice = _menu(args.menu, subs_list)
-    idx = int(choice.split(' | ')[0])
+    if args.best_rating:
+        idx = 0
+    else:
+        choice = _menu(args.menu, subs_list)
+        idx = int(choice.split(' | ')[0])
 
     # Download the subtitle which is probaby gzipped
     url = subs_dict_list[idx]['SubDownloadLink']
