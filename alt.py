@@ -2,7 +2,7 @@
 
 from iterfzf import iterfzf
 from tabulate import tabulate
-from argparse import ArgumentParser
+from argparse import ArgumentParser, SUPPRESS
 import os, re, sys, tempfile, json, gzip, requests, subprocess
 
 def _menu(menu, subs_list):
@@ -64,7 +64,7 @@ def get_subs(moviename):
     english_only = 'sublanguageid-eng'
 
     response = requests.get(
-        f'https://rest.opensubtitles.org/search/query-{moviename}-{english_only}',
+        f'https://rest.opensubtitles.org/search/query-{moviename}/{english_only}',
         headers=headers)
 
     if response.status_code != 200:
@@ -92,6 +92,8 @@ def _get_cli_args():
         help='Use a menu program like dmenu, bemenu, etc.')
     parser.add_argument('-R', '--best-rating', action='store_true',
         help='Download the best rated subtitle. Don\'t prompt user.')
+    parser.add_argument('--feeling-lucky', action='store_true',
+        help=SUPPRESS)
 
     # All the related to output
     out_group = parser.add_mutually_exclusive_group()
@@ -120,9 +122,13 @@ if __name__ == "__main__":
     subs_list = ['{:<3} | {:10.10} | {:<50.50} | {:<3.4}'
                  .format(*_filter(idx, sub)) for idx, sub in subs_dict_enum]
 
+    if args.json:
+        print(json.dumps(subs_dict_list))
+        sys.exit(0)
+
     # Subtitle selection. Download best rated subtitle, or
     # Run the menu and let user choose
-    if args.best_rating:
+    if args.best_rating or args.feeling_lucky:
         idx = 0
     else:
         choice = _menu(args.menu, subs_list)

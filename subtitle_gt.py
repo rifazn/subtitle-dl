@@ -17,7 +17,7 @@ headers = {
 # * Implement the options: c, i, and m
 # * Implement retries in case of failed downloads
 # * Use OS agnostic TMP dir
-# * -m and -j should not be mutually exclusive
+# * -m and -j ARE NOT be mutually exclusive. But now I think they should be.
 
 def get(movie):
     response = requests.get(
@@ -46,6 +46,9 @@ if __name__ == "__main__":
     parser.add_argument('-j', '--json',
             help='Prints the output formatted as json',
                 action="store_true")
+    parser.add_argument('-p', '--print-table',
+            help='Prints the output formatted as a table.',
+                action="store_true")
     parser.add_argument('-c', '--clipboard',
             help='Get the movie name from clipboard.',
                 action="store_true")
@@ -58,6 +61,13 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     subs = get(args.moviename)
+
+    # Optionally print the results in stdout
+    if args.json:
+        print(json.dumps(subs))
+
+    elif args.print_table:
+        print(tabulate(subs, headers=['Movie Name', 'Subtitle Name', 'URL', 'Rating']))
 
     if args.menu:
         menu = args.menu
@@ -95,8 +105,3 @@ if __name__ == "__main__":
         print(choice.stdout)
         print(idx, subs[idx][-2])
 
-    elif args.json:
-        print(json.dumps(subs))
-
-    else:
-        print(tabulate(subs, headers=['Movie Name', 'Subtitle Name', 'URL', 'Rating']))
