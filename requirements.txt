@@ -1,3 +1,8 @@
-requests
-tabulate
-iterfzf
+## The following requirements were added by pip freeze:
+certifi==2021.10.8
+charset-normalizer==2.0.10
+idna==3.3
+iterfzf==0.5.0.20.0
+requests==2.27.1
+tabulate==0.8.9
+urllib3==1.26.8
