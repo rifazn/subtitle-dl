@@ -29,7 +29,7 @@ def _save(fname, file_contents, outfilename=None):
     if fname.endswith(video_extensions):
         fname = fname[:-3] + 'srt'
     elif not fname.endswith('.srt'):
-        fname += fname + '.srt'
+        fname = fname + '.srt'
 
     # if outfilename is a directory
     if outfilename is not None:
