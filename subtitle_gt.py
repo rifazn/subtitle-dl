@@ -6,8 +6,6 @@ from argparse import ArgumentParser, SUPPRESS
 import os, re, sys, tempfile, json, gzip, requests, subprocess
 
 def _menu(menu, subs_list):
-    # TODO: Raise an exception in the try block. So the caller can deal with
-    # it as needed.
     # TODO: print error log instead of stdout print
     if menu:
         subs_str = '\n'.join(subs_list)
@@ -118,9 +116,9 @@ if __name__ == "__main__":
     subs_dict_enum = enumerate(subs_dict_list)
 
     # Format the dictionary items to be readable
-    _filter = lambda i, sub: [i, sub['MovieName'], sub['SubFileName'], sub['SubRating']]
-    subs_list = ['{:<3} | {:10.10} | {:<50.50} | {:<3.4}'
-                 .format(*_filter(idx, sub)) for idx, sub in subs_dict_enum]
+    _fields = lambda sub: [sub['SubFileName'], sub['SubRating']]
+    subs_list = ['{:<3} | {:<50.50} | {:<3.4}'
+                 .format(idx, *_fields(sub)) for idx, sub in subs_dict_enum]
 
     if args.json:
         print(json.dumps(subs_dict_list))
@@ -132,7 +130,14 @@ if __name__ == "__main__":
         idx = 0
     else:
         choice = _menu(args.menu, subs_list)
-        idx = int(choice.split(' | ')[0])
+        try:
+            idx = int(choice.split(' | ')[0])
+        except (TypeError, AttributeError):
+            print("No sub selected.", "Exiting.")
+            sys.exit(1)
+        except Exception as e:
+            print(f"Exception: {e.__class__}")
+            sys.exit(4)
 
     # Download the subtitle which is probaby gzipped
     url = subs_dict_list[idx]['SubDownloadLink']
