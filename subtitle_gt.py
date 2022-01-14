@@ -73,6 +73,10 @@ def get_subs(moviename):
 
     data = response.json()
 
+    if not data:
+        print(f"No subtitle with moviename: {moviename} found.")
+        sys.exit(1)
+
     keys = ['MovieName', 'SubFileName', 'SubDownloadLink', 'SubRating']
     subs = [{key: sub[key] for key in keys} for sub in data]
     subs.sort(key=lambda sub: float(sub['SubRating']), reverse=True)
@@ -113,16 +117,16 @@ if __name__ == "__main__":
 
     # Get subtitles from the REST apis
     subs_dict_list = get_subs(args.moviename)
-    subs_dict_enum = enumerate(subs_dict_list)
-
-    # Format the dictionary items to be readable
-    _fields = lambda sub: [sub['SubFileName'], sub['SubRating']]
-    subs_list = ['{:<3} | {:<50.50} | {:<3.4}'
-                 .format(idx, *_fields(sub)) for idx, sub in subs_dict_enum]
 
     if args.json:
         print(json.dumps(subs_dict_list))
         sys.exit(0)
+
+    # Format the dictionary items to be readable
+    subs_dict_enum = enumerate(subs_dict_list)
+    _fields = lambda sub: [sub['SubFileName'], sub['SubRating']]
+    subs_list = ['{:<3} | {:<50.50} | {:<3.4}'
+                 .format(idx, *_fields(sub)) for idx, sub in subs_dict_enum]
 
     # Subtitle selection. Download best rated subtitle, or
     # Run the menu and let user choose
