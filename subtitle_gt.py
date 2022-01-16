@@ -33,15 +33,14 @@ def _get_cli_args():
     return parser.parse_args()
 
 def _menu(menu, subs_list):
-    # TODO: print error log instead of stdout print
     if menu:
         subs_str = '\n'.join(subs_list)
         try:
             choice = subprocess.run(menu.split(), input=subs_str, text=True,
                                 check=True, capture_output=True).stdout
         except subprocess.CalledProcessError as err:
-            print("Error: ", err)
-            print("Exiting.")
+            print("Error: ", err, file=sys.stderr)
+            print("Exiting.", file=sys.stderr)
             sys.exit(3)
     else:
         choice = iterfzf(subs_list)
@@ -59,7 +58,8 @@ def _save(fname, file_contents, outfilename=None):
     if outfilename is not None:
         if outfilename.endswith(os.path.sep):
             if not os.path.isdir(outfilename):
-                print("The directory does not exist. Please create it first.")
+                print("The directory does not exist. Please create it first.",
+                      file=sys.stderr)
                 sys.exit(4)
             fname = os.path.join(outfilename, fname)
         else:
@@ -93,15 +93,16 @@ def get_subs(moviename):
         headers=headers)
 
     if response.status_code != 200:
-        print("Error in Request")
+        print("Error in Request", file=sys.stderr)
         print(f'status: {response.status_code}',
-              f'content: {response.content}', sep='\n')
+              f'content: {response.content}', sep='\n', file=sys.stderr)
         sys.exit(2)
 
     data = response.json()
 
     if not data:
-        print(f"No subtitle with moviename: {moviename} found.")
+        print(f"No subtitle with moviename: {moviename} found.",
+              file=sys.stderr)
         sys.exit(1)
 
     keys = ['MovieName', 'SubFileName', 'SubDownloadLink', 'SubRating']
@@ -138,10 +139,10 @@ if __name__ == "__main__":
 
         # In case Ctrl-C pressed instead of choosing a sub
         except (TypeError, AttributeError):
-            print("No sub selected.\n", "Exiting.")
+            print("No sub selected.\n", "Exiting.", file=sys.stderr)
             sys.exit(1)
         except Exception as e:
-            print(f"Exception: {e.__class__}")
+            print(f"Exception: {e.__class__}", file=sys.stderr)
             sys.exit(4)
 
     # Download the subtitle which is probaby gzipped
@@ -163,6 +164,7 @@ if __name__ == "__main__":
             with open(srt_name, 'wb') as subfile:
                 subfile.write(file_contents)
     else:
-        print("Could not download resource. Status: ", r.status_code)
+        print("Could not download resource. Status: ", r.status_code,
+              file=sys.stderr)
 
 
