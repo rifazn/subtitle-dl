@@ -5,6 +5,33 @@ from tabulate import tabulate
 from argparse import ArgumentParser, SUPPRESS
 import os, re, sys, tempfile, json, gzip, requests, subprocess
 
+def _get_cli_args():
+    parser = ArgumentParser()
+
+    # The main argument
+    parser.add_argument('moviename')
+
+    # The optional, but essental, 'options'
+    parser.add_argument('-m', '--menu', action='store',
+        help='Use a menu program like dmenu, bemenu, etc.')
+    parser.add_argument('-R', '--best-rating', action='store_true',
+        help='Download the best rated subtitle. Don\'t prompt user.')
+    parser.add_argument('--feeling-lucky', action='store_true',
+        help=SUPPRESS)
+
+    # All the related to output
+    out_group = parser.add_mutually_exclusive_group()
+    out_group.add_argument('-j', '--json', action='store_true',
+        help='Prints the output formatted as json.')
+    out_group.add_argument('-p', '--print', action='store_true',
+        help='Print subtitles formatted as a table. Do not parse this.')
+    out_group.add_argument('-o', '--output', metavar='', dest='output',
+        help='Output to <filename_or_dir>. For ex: /dir/fname.srt, or /dir/.')
+    out_group.add_argument('-x', '--dont-rename', action='store_true',
+        help='Download file with original name. Do not rename to <movie_name>.')
+
+    return parser.parse_args()
+
 def _menu(menu, subs_list):
     # TODO: print error log instead of stdout print
     if menu:
@@ -20,9 +47,6 @@ def _menu(menu, subs_list):
         choice = iterfzf(subs_list)
 
     return choice
-
-def print_json(subs):
-    print(subs)
 
 def _save(fname, file_contents, outfilename=None):
     video_extensions = tuple(".mp4 .mkv .avi".split())
@@ -44,6 +68,9 @@ def _save(fname, file_contents, outfilename=None):
     with open(fname, 'wb') as f:
         f.write(file_contents)
     print("File saved to", fname)
+
+def print_json(subs: list[dict]):
+    print(json.dumps(subs))
 
 def get_subs(moviename):
     """Get a list of subtitles for 'moviename' where each sub is a dictionary.
@@ -83,33 +110,6 @@ def get_subs(moviename):
 
     return subs
 
-def _get_cli_args():
-    parser = ArgumentParser()
-
-    # The main argument
-    parser.add_argument('moviename')
-
-    # The optional, but essental, 'options'
-    parser.add_argument('-m', '--menu', action='store',
-        help='Use a menu program like dmenu, bemenu, etc.')
-    parser.add_argument('-R', '--best-rating', action='store_true',
-        help='Download the best rated subtitle. Don\'t prompt user.')
-    parser.add_argument('--feeling-lucky', action='store_true',
-        help=SUPPRESS)
-
-    # All the related to output
-    out_group = parser.add_mutually_exclusive_group()
-    out_group.add_argument('-j', '--json', action='store_true',
-        help='Prints the output formatted as json.')
-    out_group.add_argument('-p', '--print', action='store_true',
-        help='Print subtitles formatted as a table. Do not parse this.')
-    out_group.add_argument('-o', '--output', metavar='', dest='output',
-        help='Output to <filename_or_dir>. For ex: /dir/fname.srt, or /dir/.')
-    out_group.add_argument('-x', '--dont-rename', action='store_true',
-        help='Download file with original name. Do not rename to <movie_name>.')
-
-    return parser.parse_args()
-
 
 if __name__ == "__main__":
     # Parse cli arguments
@@ -119,14 +119,13 @@ if __name__ == "__main__":
     subs_dict_list = get_subs(args.moviename)
 
     if args.json:
-        print(json.dumps(subs_dict_list))
+        print_json(subs_dict_list)
         sys.exit(0)
 
-    # Format the dictionary items to be readable
-    subs_dict_enum = enumerate(subs_dict_list)
+    # Reformat the dictionary items to be readable in stdout/a menu application
     _fields = lambda sub: [sub['SubFileName'], sub['SubRating']]
-    subs_list = ['{:<3} | {:<50.50} | {:<3.4}'
-                 .format(idx, *_fields(sub)) for idx, sub in subs_dict_enum]
+    subs_list = ['{:<3} | {:<50.50} | {:<3.4}'.format(idx, *_fields(sub))
+                    for idx, sub in enumerate(subs_dict_list)]
 
     # Subtitle selection. Download best rated subtitle, or
     # Run the menu and let user choose
@@ -136,8 +135,10 @@ if __name__ == "__main__":
         choice = _menu(args.menu, subs_list)
         try:
             idx = int(choice.split(' | ')[0])
+
+        # In case Ctrl-C pressed instead of choosing a sub
         except (TypeError, AttributeError):
-            print("No sub selected.", "Exiting.")
+            print("No sub selected.\n", "Exiting.")
             sys.exit(1)
         except Exception as e:
             print(f"Exception: {e.__class__}")
@@ -145,20 +146,14 @@ if __name__ == "__main__":
 
     # Download the subtitle which is probaby gzipped
     url = subs_dict_list[idx]['SubDownloadLink']
-    print(idx, url)
     r = requests.get(url)
 
     if r.status_code == 200:
         header = r.headers
 
-        # Write the downloaded gzip file
+        # Decompress and read the gzipped subtitle file
         gzipname = header['Content-Disposition'].split('filename=')[1].strip('"')
-        with open(os.path.join(tempfile.gettempdir(), gzipname), 'wb') as f:
-            f.write(r.content)
-
-        # Extract the gzip file and read the content
-        with gzip.open(f.name, 'rb') as gzipfile:
-            file_contents = gzipfile.read()
+        file_contents = gzip.decompress(r.content)
 
         # Write the content as regular subtitle file
         if not args.dont_rename:
@@ -167,8 +162,6 @@ if __name__ == "__main__":
             srt_name = gzipname[:-3]
             with open(srt_name, 'wb') as subfile:
                 subfile.write(file_contents)
-
-        print("done")
     else:
         print("Could not download resource. Status: ", r.status_code)
 
